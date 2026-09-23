@@ -14,27 +14,17 @@ LAN_CFG="$ROOT/package/base-files/files/bin/config_generate"
 # 2) 主机名 -> OpenWRT
 [ -f "$LAN_CFG" ] && sed -i "s/hostname='.*'/hostname='OpenWRT'/g" "$LAN_CFG"
 
-# 3) 默认中文界面 + 时区
-mkdir -p "$ROOT/files/etc"
-cat > "$ROOT/files/etc/config/luci" <<'EOF'
-core {
-        lang='zh_cn'
-        media_baseurl=''
-        upload_secure_http='1'
-        upload_insecure_http='0'
-        resourcebase='/luci-static/resources'
-        flashcount='1'
-        flashhold='3'
-        use_broadcast='0'
-        bind=' '
-}
-main {
-        lang='zh_cn'
-        mediaurl='/luci-static/bootstrap'
-        disable_ubusLogout='0'
-        write_by default
-}
+# 3) 默认中文界面 + 时区（uci-defaults 方式，避免覆盖整份 luci 配置冲突）
+mkdir -p "$ROOT/files/etc/config" "$ROOT/files/etc/uci-defaults"
+cat > "$ROOT/files/etc/uci-defaults/10-luci-lang-zh" <<'EOF'
+#!/bin/sh
+uci set luci.main.lang='zh_cn'
+uci set luci.core.lang='zh_cn' 2>/dev/null || true
+uci commit luci
+exit 0
 EOF
+chmod +x "$ROOT/files/etc/uci-defaults/10-luci-lang-zh"
+
 # 时区
 cat > "$ROOT/files/etc/config/system" <<'EOF'
 config system
