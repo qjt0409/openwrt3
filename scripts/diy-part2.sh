@@ -84,6 +84,19 @@ EOF
     chmod +x "$ROOT/files/etc/uci-defaults/99-istore-zh"
 fi
 
+echo "[diy2] ========== 修复 alist cgofuse 缺 fuse.h =========="
+ALIST_MK="$CUSTOM/luci-app-alist/alist/Makefile"
+if [ -f "$ALIST_MK" ]; then
+    # 1) 加 fuse3 构建依赖(让头文件进 staging)
+    sed -i 's|^PKG_BUILD_DEPENDS:=golang/host$|PKG_BUILD_DEPENDS:=golang/host fuse3|' "$ALIST_MK"
+    # 2) Build/Prepare 开头建 fuse.h -> fuse3/fuse.h 软链(cgofuse #include <fuse.h>)
+    sed -i '/^define Build\/Prepare$/a\\tln -sf $(STAGING_DIR)/usr/include/fuse3/fuse.h $(STAGING_DIR)/usr/include/fuse.h 2>/dev/null || true' "$ALIST_MK"
+    # 3) 运行期也依赖 fuse3
+    sed -i 's|^  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle$|  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle +fuse3|' "$ALIST_MK"
+    echo "[diy2] alist Makefile 已打 fuse3 补丁"
+    grep -n "fuse3\|PKG_BUILD_DEPENDS" "$ALIST_MK" | head
+fi
+
 echo "[diy2] ========== 生成精简 luci-app-freemem (释放内存) =========="
 FM="$CUSTOM/luci-app-freemem"
 mkdir -p "$FM/luasrc/controller" "$FM/luasrc/model/cbi" "$FM/root/usr/bin" "$FM/root/etc/uci-defaults"
