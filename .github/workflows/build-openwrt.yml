@@ -48,10 +48,13 @@ jobs:
 
       - name: Load feeds & DIY scripts
         run: |
-          cp ${{ env.FEEDS_CONF }} openwrt/feeds.conf.default
+          # 追加第三方 feed 到 LEDE 默认 feeds.conf.default(不覆盖标准源)
+          cat ${{ env.FEEDS_CONF }} >> openwrt/feeds.conf.default
           cp ${{ env.DIY_P1_SH }} openwrt/diy-part1.sh
           cp ${{ env.DIY_P2_SH }} openwrt/diy-part2.sh
           chmod +x openwrt/diy-part1.sh openwrt/diy-part2.sh
+          echo "===== feeds.conf.default ====="
+          cat openwrt/feeds.conf.default
 
       - name: Custom packages (part1)
         run: cd openwrt && bash diy-part1.sh
