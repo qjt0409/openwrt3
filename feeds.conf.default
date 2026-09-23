@@ -8,4 +8,4 @@ src-git passwall2 https://github.com/Openwrt-Passwall/openwrt-passwall2.git;main
 
 # iStore 软件中心 + 易有云 NAS 套件
 src-git istore https://github.com/linkease/istore.git;main
-src-git nas https://github.com/linkease/nas-packages.git;main
+src-git nas https://github.com/linkease/nas-packages.git;master
