@@ -13,11 +13,19 @@ clone() {
         echo "[diy1] $name 已存在，跳过 clone"
         return 0
     fi
-    if [ -n "$branch" ]; then
-        git clone --depth=1 -b "$branch" "$url" "$name"
-    else
-        git clone --depth=1 "$url" "$name"
-    fi
+    local i
+    for i in 1 2 3; do
+        if [ -n "$branch" ]; then
+            git clone --depth=1 -b "$branch" "$url" "$name" && return 0
+        else
+            git clone --depth=1 "$url" "$name" && return 0
+        fi
+        echo "[diy1] $name clone 失败(第 $i 次)，5s 后重试..."
+        rm -rf "$name"
+        sleep 5
+    done
+    echo "[diy1] 致命：$name clone 3 次仍失败" >&2
+    return 1
 }
 
 # ---- 推送类 ----
@@ -40,8 +48,8 @@ clone "https://github.com/sirpdboy/luci-app-poweroff.git"   "luci-app-poweroff" 
 clone "https://github.com/jerrykuku/luci-theme-argon.git"    "luci-theme-argon"       # Argon 主题
 clone "https://github.com/jerrykuku/luci-app-argon-config.git" "luci-app-argon-config" # Argon 设置
 
-# ---- 1Panel 运维面板 ----
-clone "https://github.com/gcsong023/wrt1panel.git"          "wrt1panel"
+# 注: 1Panel 为 Go 源码工程(非 OpenWrt Makefile 包), 不在固件内编译;
+#     烧录后通过 Docker(本固件已含 dockerman) 或官方脚本安装。
 
 echo "[diy1] 第三方插件 clone 完成："
 ls -1
