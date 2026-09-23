@@ -1,0 +1,4 @@
+*.log
+.dl_cache/
+openwrt/
+artifacts/

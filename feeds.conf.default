@@ -1,0 +1,11 @@
+# Lean LEDE 默认 feeds（由 workflow 在 clone lede 后合并）
+# 这里只追加需要作为 feed 管理的源；其余插件在 scripts/diy-part1.sh 中精准 clone
+
+# passwall / passwall2（含依赖包子源）
+src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git;main
+src-git passwall https://github.com/Openwrt-Passwall/openwrt-passwall.git;main
+src-git passwall2 https://github.com/Openwrt-Passwall/openwrt-passwall2.git;main
+
+# iStore 软件中心 + 易有云 NAS 套件
+src-git istore https://github.com/linkease/istore.git;main
+src-git nas https://github.com/linkease/nas-packages.git;main

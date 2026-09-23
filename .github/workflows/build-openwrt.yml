@@ -1,0 +1,119 @@
+name: Build OpenWrt (X86_64 / LEDE)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  FEEDS_CONF: feeds.conf.default
+  CONFIG_FILE: seed.config
+  DIY_P1_SH: scripts/diy-part1.sh
+  DIY_P2_SH: scripts/diy-part2.sh
+  REPO_URL: https://github.com/coolsnowwolf/lede.git
+  REPO_BRANCH: master
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    steps:
+      - name: Checkout config repo
+        uses: actions/checkout@v4
+
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Prepare build env
+        run: |
+          sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo apt-get update
+          sudo apt-get -y install build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
+              gettext git libncurses-dev libssl-dev python3-distutils rsync unzip zlib1g-dev \
+              file wget python3-dev swig
+          df -h
+
+      - name: Clone LEDE source
+        run: |
+          git clone --depth=1 $REPO_URL -b $REPO_BRANCH openwrt
+          cd openwrt
+          echo "OPENWRT_VERSION=$(cat include/version.mk | grep DEFAULT_REVISION | cut -d= -f2)" >> $GITHUB_ENV
+
+      - name: Load feeds & DIY scripts
+        run: |
+          cp ${{ env.FEEDS_CONF }} openwrt/feeds.conf.default
+          cp ${{ env.DIY_P1_SH }} openwrt/diy-part1.sh
+          cp ${{ env.DIY_P2_SH }} openwrt/diy-part2.sh
+          chmod +x openwrt/diy-part1.sh openwrt/diy-part2.sh
+
+      - name: Custom packages (part1)
+        run: cd openwrt && bash diy-part1.sh
+
+      - name: Update & install feeds
+        run: |
+          cd openwrt
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Apply seed config
+        run: |
+          cd openwrt
+          cp ../${{ env.CONFIG_FILE }} .config
+          make defconfig
+
+      - name: Custom tweaks (part2)
+        run: cd openwrt && bash diy-part2.sh
+
+      - name: Finalize config
+        run: |
+          cd openwrt
+          make defconfig
+          echo "===== .config summary ====="
+          grep -E "CONFIG_TARGET_|CONFIG_PACKAGE_luci-app-(passwall|dockerman|argon|store|alist|openlist2|linkease|ddns-go|lucky|oaf|ttyd|diskman|eqosplus|nlbwmon|turboacc|serverchan|pushbot|freemem|commands|mwan3|uhttpd|samba4|upnp)" .config || true
+
+      - name: Download packages
+        run: cd openwrt && make download -j8 V=s
+
+      - name: Compile
+        run: |
+          cd openwrt
+          nproc
+          make -j$(nproc) || make -j1 V=s
+
+      - name: Collect artifacts
+        run: |
+          cd openwrt/bin/targets/*/*
+          ls -lh
+          mkdir -p ${{ github.workspace }}/artifacts
+          cp -f *.img *.img.gz *.vmdk *.vdi *.vhd *.vhdx *.iso *.bin 2>/dev/null || true
+          cp -f * ${{ github.workspace }}/artifacts/ 2>/dev/null || true
+          echo "ARTIFACT_COUNT=$(ls ${{ github.workspace }}/artifacts | wc -l)" >> $GITHUB_ENV
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openwrt-x86_64
+          path: artifacts/
+          retention-days: 14
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: openwrt-x86_64-${{ github.run_number }}
+          name: "OpenWrt X86_64 build #${{ github.run_number }}"
+          body: |
+            Lean LEDE 云编译
+            - 目标: x86_64 (J1900/J1800 通用)
+            - 镜像格式: ext4/squashfs × EFI/非EFI × img.gz/vmdk/vdi/vhd/iso
+            - 管理IP: 10.0.1.1   用户名: root   密码: password
+            - 主机名: OpenWRT
+          files: artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
