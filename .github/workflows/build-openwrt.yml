@@ -21,6 +21,14 @@ jobs:
       - name: Checkout config repo
         uses: actions/checkout@v4
 
+      - name: Cache downloaded sources (dl/)
+        uses: actions/cache@v4
+        with:
+          path: openwrt/dl
+          key: openwrt-dl-${{ github.run_id }}
+          restore-keys: |
+            openwrt-dl-
+
       - name: Free disk space
         uses: jlumbroso/free-disk-space@main
         with:

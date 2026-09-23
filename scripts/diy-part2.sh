@@ -89,8 +89,8 @@ ALIST_MK="$CUSTOM/luci-app-alist/alist/Makefile"
 if [ -f "$ALIST_MK" ]; then
     # 1) 加 fuse3 构建依赖(让头文件进 staging)
     sed -i 's|^PKG_BUILD_DEPENDS:=golang/host$|PKG_BUILD_DEPENDS:=golang/host fuse3|' "$ALIST_MK"
-    # 2) Build/Prepare 开头建 fuse.h -> fuse3/fuse.h 软链(cgofuse #include <fuse.h>)
-    sed -i '/^define Build\/Prepare$/a\\tln -sf $(STAGING_DIR)/usr/include/fuse3/fuse.h $(STAGING_DIR)/usr/include/fuse.h 2>/dev/null || true' "$ALIST_MK"
+    # 2) Build/Prepare 开头把 fuse3 全部头文件软链到 include 根目录(cgofuse 需要 fuse.h / fuse_common.h 等)
+    sed -i '/^define Build\/Prepare$/a\\tln -sf $(STAGING_DIR)/usr/include/fuse3/*.h $(STAGING_DIR)/usr/include/ 2>/dev/null || true' "$ALIST_MK"
     # 3) 运行期也依赖 fuse3
     sed -i 's|^  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle$|  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle +fuse3|' "$ALIST_MK"
     echo "[diy2] alist Makefile 已打 fuse3 补丁"
