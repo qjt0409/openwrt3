@@ -42,7 +42,7 @@ clone "https://github.com/sbwml/luci-app-openlist2.git"    "luci-app-openlist2" 
 # ---- 系统工具类 ----
 clone "https://github.com/lisaac/luci-app-diskman.git"      "luci-app-diskman"      # 磁盘管理
 clone "https://github.com/sirpdboy/luci-app-eqosplus.git"   "luci-app-eqosplus"     # IP 限速
-clone "https://github.com/sirpdboy/luci-app-poweroff.git"   "luci-app-poweroff"      # 关机(附赠)
+clone "https://github.com/esirplayground/luci-app-poweroff.git" "luci-app-poweroff"    # 关机
 
 # ---- 主题类 ----
 clone "https://github.com/jerrykuku/luci-theme-argon.git"    "luci-theme-argon"       # Argon 主题
