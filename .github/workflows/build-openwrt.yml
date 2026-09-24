@@ -95,6 +95,18 @@ jobs:
       - name: Download packages
         run: cd openwrt && make download -j8 V=s
 
+      - name: Patch cgofuse for FUSE3 (alist)
+        run: |
+          cd openwrt
+          FUSE_FILE=$(find dl/go-mod-cache/github.com/winfsp/cgofuse* -name host_cgo.go 2>/dev/null | head -1)
+          if [ -n "$FUSE_FILE" ]; then
+            echo "patching $FUSE_FILE"
+            sed -i 's/#define FUSE_USE_VERSION [0-9]*/#define FUSE_USE_VERSION 35/' "$FUSE_FILE"
+            grep -n FUSE_USE_VERSION "$FUSE_FILE"
+          else
+            echo "cgofuse source not found (maybe already patched)"
+          fi
+
       - name: Compile
         run: |
           cd openwrt
