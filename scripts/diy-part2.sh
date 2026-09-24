@@ -93,8 +93,8 @@ if [ -f "$ALIST_MK" ]; then
     sed -i '/^define Build\/Prepare$/a\\tln -sf $(STAGING_DIR)/usr/include/fuse3/*.h $(STAGING_DIR)/usr/include/ 2>/dev/null || true' "$ALIST_MK"
     # 3) 运行期也依赖 fuse3
     sed -i 's|^  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle$|  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle +fuse3|' "$ALIST_MK"
-    # 4) cgofuse 要求 FUSE API >=30, 经 TARGET_CFLAGS 传入 CGO_CFLAGS
-    sed -i '/^include $(INCLUDE_DIR)\/package.mk$/a TARGET_CFLAGS += -DFUSE_USE_VERSION=30' "$ALIST_MK"
+    # 4) cgofuse 要求 FUSE API 版本, 经 TARGET_CFLAGS 传入 CGO_CFLAGS; 新版 fuse3 需 35
+    sed -i '/^include $(INCLUDE_DIR)\/package.mk$/a TARGET_CFLAGS += -DFUSE_USE_VERSION=35' "$ALIST_MK"
     echo "[diy2] alist Makefile 已打 fuse3 补丁"
     grep -n "fuse3\|FUSE_USE_VERSION\|PKG_BUILD_DEPENDS" "$ALIST_MK" | head
 fi
