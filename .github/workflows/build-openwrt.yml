@@ -95,30 +95,6 @@ jobs:
       - name: Download packages
         run: cd openwrt && make download -j8 V=s
 
-      - name: Patch cgofuse for FUSE3 (alist)
-        run: |
-          cd openwrt
-          # Extract alist source
-          make package/openwrt-custom/luci-app-alist/alist/prepare V=s || true
-          # Find the extracted source dir and run go mod download to populate cache
-          ALIST_DIR=$(ls -d build_dir/target-*/alist-* 2>/dev/null | head -1)
-          echo "alist dir: $ALIST_DIR"
-          if [ -n "$ALIST_DIR" ] && [ -f "$ALIST_DIR/go.mod" ]; then
-            cd "$ALIST_DIR"
-            export PATH=$PATH:/usr/local/go/bin
-            export GOPATH=$(pwd)/.go_work/build
-            export GOMODCACHE=$(pwd)/../../../dl/go-mod-cache
-            go mod download github.com/winfsp/cgofuse 2>&1 || echo "go mod download failed, will try during build"
-            cd -
-          fi
-          # Patch FUSE_USE_VERSION from 26 to 35 in cgofuse source
-          find dl/go-mod-cache/github.com/winfsp/cgofuse* -name '*.go' -exec grep -l 'FUSE_USE_VERSION' {} \; 2>/dev/null | while read f; do
-            echo "patching $f"
-            sed -i 's/#define FUSE_USE_VERSION [0-9]*/#define FUSE_USE_VERSION 35/' "$f"
-            grep -n FUSE_USE_VERSION "$f"
-          done
-          echo "=== cgofuse patch done ==="
-
       - name: Compile
         run: |
           cd openwrt

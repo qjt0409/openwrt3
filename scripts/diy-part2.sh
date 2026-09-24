@@ -84,19 +84,16 @@ EOF
     chmod +x "$ROOT/files/etc/uci-defaults/99-istore-zh"
 fi
 
-echo "[diy2] ========== 修复 alist cgofuse 缺 fuse.h =========="
+echo "[diy2] ========== alist: 禁用 CGO 避开 cgofuse/fuse 编译问题 =========="
 ALIST_MK="$CUSTOM/luci-app-alist/alist/Makefile"
 if [ -f "$ALIST_MK" ]; then
-    # 1) 加 fuse3 构建依赖(让头文件进 staging)
-    sed -i 's|^PKG_BUILD_DEPENDS:=golang/host$|PKG_BUILD_DEPENDS:=golang/host fuse3|' "$ALIST_MK"
-    # 2) Build/Prepare 开头把 fuse3 全部头文件软链到 include 根目录(cgofuse 需要 fuse.h / fuse_common.h 等)
-    sed -i '/^define Build\/Prepare$/a\\tln -sf $(STAGING_DIR)/usr/include/fuse3/*.h $(STAGING_DIR)/usr/include/ 2>/dev/null || true' "$ALIST_MK"
-    # 3) 运行期也依赖 fuse3
-    sed -i 's|^  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle$|  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle +fuse3|' "$ALIST_MK"
-    # 4) cgofuse 要求 FUSE API 版本, 经 TARGET_CFLAGS 传入 CGO_CFLAGS; 新版 fuse3 需 35
-    sed -i '/^include $(INCLUDE_DIR)\/package.mk$/a TARGET_CFLAGS += -DFUSE_USE_VERSION=35' "$ALIST_MK"
-    echo "[diy2] alist Makefile 已打 fuse3 补丁"
-    grep -n "fuse3\|FUSE_USE_VERSION\|PKG_BUILD_DEPENDS" "$ALIST_MK" | head
+    # 禁用 CGO: alist 纯 Go 编译, 不需要 cgofuse(FUSE 挂载), 也不需要 fuse3
+    # alist v3 使用 modernc.org/sqlite (纯Go), CGO=0 可正常编译
+    sed -i 's|^GO_GCFLAGS:=.*|GO_GCFLAGS:=|' "$ALIST_MK"
+    # 在 include package.mk 前加 CGO_ENABLED=0
+    sed -i '/^include $(INCLUDE_DIR)\/package.mk$/a CGO_ENABLED:=0' "$ALIST_MK"
+    echo "[diy2] alist 已设 CGO_ENABLED=0"
+    grep -n "CGO_ENABLED" "$ALIST_MK"
 fi
 
 echo "[diy2] ========== 生成精简 luci-app-freemem (释放内存) =========="
