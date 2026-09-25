@@ -87,10 +87,9 @@ fi
 echo "[diy2] ========== alist: fuse3 + cgofuse 源码补丁 =========="
 ALIST_MK="$CUSTOM/luci-app-alist/alist/Makefile"
 if [ -f "$ALIST_MK" ]; then
-    # 1) 加 fuse3 构建依赖
-    sed -i 's|^PKG_BUILD_DEPENDS:=golang/host$|PKG_BUILD_DEPENDS:=golang/host fuse3|' "$ALIST_MK"
-    # 2) 运行期依赖 fuse3
-    sed -i 's|^  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle$|  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle +fuse3|' "$ALIST_MK"
+    # 1) 加 fuse3 构建依赖(仅编译期需要头文件)
+    sed -i 's|^PKG_BUILD_DEPENDS:=golang/host$|PKG_BUILD_DEPENDS:=golang/host fuse3/host|' "$ALIST_MK"
+    # 2) 运行期不加 +fuse3 (避免包名不匹配导致打包失败; FUSE 挂载功能不常用)
     # 3) 追加 Build/Prepare 覆写: 软链 fuse3 头文件 + patch cgofuse FUSE_USE_VERSION
     cat >> "$ALIST_MK" <<'MAKEPATCH'
 
